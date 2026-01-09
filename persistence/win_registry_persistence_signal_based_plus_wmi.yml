@@ -1,0 +1,88 @@
+title: Suspicious Registry Persistence (Signal-Based) + WMI WBEM Artifacts
+id: 5c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f
+status: stable
+description: |
+  Detects registry-based persistence (Run/RunOnce/Winlogon/AppInit/IFEO/COM/LSA) with suspicious value patterns
+  (encoded command, network indicators, script engines, high-risk keywords, user-writable paths),
+  and also detects WBEM/WMI persistence artifacts tied to WMI Event Consumers.
+  This rule is correlation-friendly: pair with process creation + image load + WMI activity telemetry where available.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.persistence
+  - attack.defense_evasion
+  - attack.execution
+  - attack.t1547.001
+  - attack.t1546.012
+  - attack.t1546.015
+  - attack.t1547.009
+  - attack.t1546.003
+logsource:
+  product: windows
+  category: registry_set
+detection:
+  selection_keys:
+    TargetObject|contains:
+      - '\CurrentVersion\Run'
+      - '\CurrentVersion\RunOnce'
+      - '\Policies\Explorer\Run'
+      - '\Active Setup\Installed Components'
+      - '\Winlogon\Userinit'
+      - '\Winlogon\Shell'
+      - '\AppInit_DLLs'
+      - '\Image File Execution Options'
+      - '\Classes\mscfile\shell\open\command'
+      - '\Classes\exefile\shell\open\command'
+      - '\Control\Lsa'
+
+  selection_keywords:
+    Details|contains|any:
+      - 'powershell'
+      - 'pwsh'
+      - '-enc'
+      - 'frombase64string'
+      - 'invoke-expression'
+      - 'iex('
+      - 'downloadstring'
+      - 'mshta'
+      - 'rundll32'
+      - 'regsvr32'
+      - 'javascript:'
+      - 'vbscript:'
+      - 'wscript.shell'
+
+  selection_network_regex:
+    Details|re: 'https?://|([0-9]{1,3}\.){3}[0-9]{1,3}'
+
+  selection_base64_regex:
+    Details|re: '[A-Za-z0-9+/]{20,}={0,2}'
+
+  selection_user_paths:
+    Details|contains|any:
+      - '\AppData\Local\Temp'
+      - '\Windows\Temp'
+      - '\Downloads\'
+      - '\Users\Public\'
+      - '\ProgramData\'
+
+  selection_wmi_persistence:
+    TargetObject|contains:
+      - '\wbem\cimom\securedhostproviders'
+      - '\wbem\cimom\autorecover mofs'
+      - '\root\subscription'
+    Details|contains|any:
+      - 'ActiveScriptEventConsumer'
+      - 'CommandLineEventConsumer'
+      - 'ScriptText'
+      - 'CommandLineTemplate'
+
+  condition: >
+    (
+      selection_keys and (
+        selection_keywords or selection_network_regex or selection_base64_regex or selection_user_paths
+      )
+    ) or selection_wmi_persistence
+falsepositives:
+  - Legitimate enterprise deployment scripts (baseline by admin tooling and deployment accounts)
+  - SCCM/MECM client operations (filter by account/host role in SIEM)
+level: high
