@@ -1,0 +1,29 @@
+title: WMI Process-less Persistence - scrcons.exe Network Connection (Rare Beacon)
+id: 3d9d7d2e-79c4-4f0a-9d9f-5a5d3cbdce0a
+status: stable
+description: |
+  Detects rare network connections from scrcons.exe which may indicate in-memory script execution
+  (ActiveScriptEventConsumer) performing C2 over HTTP/S without spawning child processes.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.command_and_control
+  - attack.persistence
+  - attack.t1071
+  - attack.t1546.003
+logsource:
+  product: windows
+  category: network_connection
+detection:
+  selection_proc:
+    Image|endswith: '\scrcons.exe'
+  selection_ports:
+    DestinationPort:
+      - 80
+      - 443
+      - 8080
+      - 8443
+  condition: selection_proc and selection_ports
+falsepositives:
+  - Extremely rare; if present, validate approved enterprise automation first
+level: critical
