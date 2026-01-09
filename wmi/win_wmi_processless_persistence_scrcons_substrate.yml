@@ -1,0 +1,27 @@
+title: WMI Process-less Persistence Substrate - scrcons.exe Loading Script Engines
+id: 6e1fdd1c-60d9-4c8c-9f6f-7d6b2a6ce44d
+status: stable
+description: |
+  Detects process-less WMI persistence tradecraft where ActiveScriptEventConsumer executes
+  VBScript/JScript in-memory inside scrcons.exe. The consumer cannot function without loading script engines.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.persistence
+  - attack.t1546.003
+logsource:
+  product: windows
+  category: image_load
+detection:
+  selection_scrcons:
+    Image|endswith: '\scrcons.exe'
+  selection_script_engines:
+    ImageLoaded|endswith:
+      - '\vbscript.dll'
+      - '\jscript.dll'
+      - '\jscript9.dll'
+      - '\scrobj.dll'
+  condition: selection_scrcons and selection_script_engines
+falsepositives:
+  - Rare legacy scripting consumers in older estates (baseline by host role, SCCM/MECM if present)
+level: critical
