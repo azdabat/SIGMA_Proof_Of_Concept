@@ -1,0 +1,24 @@
+title: Kerberoasting Indicator - RC4 Encrypted TGS Requests (4769)
+id: a7d18f9f-0e60-47f0-9f2f-2b7b4f2d37f1
+status: stable
+description: |
+  Detects potential Kerberoasting by identifying Kerberos TGS requests (Event ID 4769)
+  that use RC4 encryption (0x17). Sigma cannot baseline-spike by itself; use SIEM aggregation
+  per service account + requester host/user.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.credential_access
+  - attack.t1558.003
+logsource:
+  product: windows
+  category: security
+detection:
+  selection_4769:
+    EventID: 4769
+  selection_rc4:
+    TicketEncryptionType: '0x17'
+  condition: selection_4769 and selection_rc4
+falsepositives:
+  - Legacy domains / service accounts still configured for RC4 (should be remediated)
+level: medium
