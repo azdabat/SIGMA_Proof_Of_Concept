@@ -1,0 +1,48 @@
+title: Named Pipe C2 and Lateral Movement Indicators (High-Fidelity)
+id: 9a6f2a8c-9f2e-4c9a-8df8-1f6d5b2f0a11
+status: stable
+description: |
+  Detects high-fidelity named pipe indicators associated with common C2 frameworks and lateral movement tooling.
+  This Sigma stage rule is designed to be correlated with service creation / SMB activity in a backend engine.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.command_and_control
+  - attack.lateral_movement
+  - attack.t1071
+  - attack.t1021
+logsource:
+  product: windows
+  category: pipe_created
+detection:
+  selection_pipe_keywords:
+    PipeName|contains|any:
+      # Cobalt Strike / common profiles
+      - '\MSSE-'
+      - '\status_'
+      - '\msagent_'
+      - '\postex_'
+      - '\beacon'
+      - '\pipetst'
+      # Sliver / Covenant / Empire / PoshC2
+      - '\sliver'
+      - '\gruntsvc'
+      - '\covenant'
+      - '\empire'
+      - '\poshc2'
+      - '\jaccdpqnvbrrxlaf'
+      # PsExec / RemCom families
+      - '\PSEXESVC'
+      - '\remcom'
+      - '\csexec'
+      # Credential tooling
+      - '\lsadump'
+      - '\cachedump'
+      - '\wceservicepipe'
+  selection_forknrun_hex:
+    PipeName|re: '^(\\\\\.\\)?\\pipe\\[0-9a-f]{7,10}$'
+  condition: selection_pipe_keywords or selection_forknrun_hex
+falsepositives:
+  - Legitimate administrative tooling that uses named pipes (rare; tune by approved tooling + change tickets)
+  - Security products / EDR internal IPC (baseline by tenant)
+level: high
