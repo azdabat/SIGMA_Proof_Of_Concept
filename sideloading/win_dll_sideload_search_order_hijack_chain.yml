@@ -1,0 +1,34 @@
+title: DLL Sideloading / Search Order Hijack Signals - DLL Loaded from User-Writable Path
+id: 0f0d4d55-9a6c-4c1b-9a07-4b7d73fdcbef
+status: stable
+description: |
+  Detects high-risk DLL sideload/search-order hijack indicators by identifying DLL loads
+  from user-writable paths. Correlate with file creation and persistence in the SIEM for chain confidence.
+author: Ala Dabat
+date: 2026-01-08
+tags:
+  - attack.persistence
+  - attack.defense_evasion
+  - attack.t1574.001
+logsource:
+  product: windows
+  category: image_load
+detection:
+  selection_user_writable_dll:
+    ImageLoaded|re: '(?i)^[a-z]:\\(users\\|programdata\\|windows\\temp\\|temp\\|windows\\tasks\\).+\.dll$'
+  selection_susp_loader_parent:
+    ParentImage|endswith:
+      - '\winword.exe'
+      - '\excel.exe'
+      - '\powerpnt.exe'
+      - '\outlook.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+      - '\mshta.exe'
+  condition: selection_user_writable_dll or (selection_user_writable_dll and selection_susp_loader_parent)
+falsepositives:
+  - Some legitimate apps load plugins from ProgramData/User paths (baseline by vendor/app)
+level: high
